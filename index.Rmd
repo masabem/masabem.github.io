@@ -1,0 +1,231 @@
+---
+title: "Modelling COVID-19 dynamics in Rwanda"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(shiny)
+library(dplyr)
+library(plotly)
+
+
+library(readxl)
+Covid_Weekly_data <- read_excel("C:/EMAS WORKING FILES 2022/Emas Divers 2/RESEARCH/PROPOSALS WRITING/Maths_NCST_Proposal/Implementation/workingdocsday1huye/Covid_Weekly_data.xlsx")
+
+#View(Covid_Weekly_data)
+
+library(evgam)
+
+m_gev <- evgam(Confirmed ~ s(Average_temp, bs="cr") + s(Rainfal, bs = "cr")+s(Solarrad, bs = "cr") ,Covid_Weekly_data, family = "gev") 
+
+#m_gev1 <- evgam(Confirmed ~ s(Average_temp, k = 3) + s(Rainfal, bs = "cr")+s(Solarrad, bs = "cr") ,Covid_Weekly_data, family = "gev") 
+
+summary(m_gev)
+
+#install.packages("tidyverse")
+
+library(tidyverse)
+
+plot(m_gev, col="blue")+geom_errorbarh(aes(xmin = xmin, xmax = xmax), color = "green")
+
+summary(m_gev)
+
+#plot(m_gev1)
+
+#install.packages("plotly")
+
+library(plotly)
+
+#par(mfrow = c(2,2), oma = c(0.1, 0.1, 2,2))
+
+plot(Covid_Weekly_data$Average_temp,Covid_Weekly_data$Confirmed,data=Covid_Weekly_data,col="blue")
+
+plot(Covid_Weekly_data$Rainfal,Covid_Weekly_data$Confirmed,data=Covid_Weekly_data,col="red")
+
+plot(Covid_Weekly_data$Solarrad,Covid_Weekly_data$Confirmed,data=Covid_Weekly_data, col="green")
+
+plot(Covid_Weekly_data$Week,                              # Draw first time series
+     Covid_Weekly_data$Confirmed,col="red", type="l",
+     ylim = c(0, 3100),
+     xlab = "Week",
+     ylab = "Weekly max new cases")
+
+plot(Covid_Weekly_data$Week,                             # Draw second time series
+     Covid_Weekly_data$Average_temp,col="blue", type="l",
+     ylim = c(18.5, 22),
+     xlab = "Week",
+     ylab = "Weekly average temperature")
+
+plot(Covid_Weekly_data$Week,                             # Draw third time series
+     Covid_Weekly_data$Rainfal,col="green", type="l",
+     ylim = c(0,15),
+     xlab = "Week",
+     ylab = "Weekly average rainfal")
+
+plot(Covid_Weekly_data$Week,                             # Draw third time series
+     Covid_Weekly_data$Solarrad,col="magenta", type="l",
+     ylim = c(50,90),
+     xlab = "Week",
+     ylab = "Weekly average solar radiation")
+
+
+
+```
+
+
+```{r data}
+
+#source: https://towardsdatascience.com/create-an-interactive-dashboard-with-shiny-flexdashboard-and-plotly-b1f025aebc9c
+#getwd()
+Covid_Weekly_data <- read_excel("C:/EMAS WORKING FILES 2022/Emas Divers 2/RESEARCH/PROPOSALS WRITING/Maths_NCST_Proposal/Implementation/workingdocsday1huye/Covid_Weekly_data.xlsx")
+
+
+
+```
+Column {.sidebar data-width=200}
+-----------------------------------------------------------------------
+```{r}
+
+#selectInput("categorical_variable", label = "Select Categorical Variable:", choices = Categorical.Variables)
+
+#selectInput("numeric_variable", label = "Select Numeric Variable:", choices = Numeric.Variables)
+
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Covid data between March 2020 to September 2021
+
+```{r}
+
+library(DT)
+datatable(Covid_Weekly_data, options = list(pageLength = 5))
+
+
+```
+
+### Generalized Extreme Value model
+```{r}
+
+renderPlot(plot(m_gev, col="blue")+geom_errorbarh(aes(xmin = xmin, xmax = xmax), color = "green"))
+
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Average temperature: Weekly confirmed cases
+
+```{r}
+
+#renderPlot(plot(Covid_Weekly_data$Average_temp,Covid_Weekly_data$Confirmed,data=Covid_Weekly_data,col="blue"))
+  
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Average_temp,y=~Covid_Weekly_data$Confirmed,data=Covid_Weekly_data)
+})
+
+```
+
+### Rainfall: Weekly confirmed cases
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Rainfal,y=~Covid_Weekly_data$Confirmed,data=Covid_Weekly_data)
+})
+
+
+```
+
+### Solar radiation: Weekly confirmed cases
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Solarrad,y=~Covid_Weekly_data$Confirmed,data=Covid_Weekly_data)
+})
+
+
+```
+
+
+### Weekly Max New Cases 
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Week,y=~Covid_Weekly_data$Confirmed,data=Covid_Weekly_data,type = "scatter",mode = "lines" , color = I("red"))
+})
+
+
+```
+
+
+Column {data-width=400}
+-----------------------------------------------------------------------
+
+### Weekly Average Temperature
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Week,y=~Covid_Weekly_data$Average_temp,data=Covid_Weekly_data, type = "scatter",mode = "lines", color = I("blue"))
+})
+
+```
+
+### Weekly Average Rainfall
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Week,y=~Covid_Weekly_data$Rainfal,data=Covid_Weekly_data, type = "scatter",mode = "lines" , color = I("green"))
+})
+
+
+```
+
+### Weekly Average Solar Radiation
+
+```{r}
+
+renderPlotly({
+  #plot_ly(x = data[[input$numeric_variable]], type = "histogram",  marker = list(color = "#008ae6",
+   #                         line = list(color = "darkgray",
+    #                                    width = 1)))
+  plot_ly(x=~Covid_Weekly_data$Week,y=~Covid_Weekly_data$Solarrad,data=Covid_Weekly_data, type = "scatter",mode = "lines" ,color = I("magenta"))
+})
+
+
+```
+
+
+
+
+
